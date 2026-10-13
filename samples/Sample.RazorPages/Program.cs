@@ -6,7 +6,7 @@ builder.AddServiceDefaults();
 builder.Services.AddRazorPages();
 
 // The Fluent UI Blazor admin page is hosted in this Razor Pages app as a Blazor Server component.
-builder.Services.AddServerSideBlazor();
+builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddFeatureFlagAdminUi(new Uri("https+http://apiservice/api/feature-flags/"));
 
 var app = builder.Build();
@@ -20,9 +20,10 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 app.UseAuthorization();
+app.UseAntiforgery();
 app.MapStaticAssets();
 
-app.MapBlazorHub();
+app.MapRazorComponents<Sample.RazorPages.Components.App>().AddInteractiveServerRenderMode();
 app.MapRazorPages().WithStaticAssets();
 app.MapDefaultEndpoints();
 

@@ -20,6 +20,6 @@ Open the Aspire dashboard and launch each app. The sample API allows anonymous a
 ## Hosting in Blazor
 
 Layout: add the Fluent bundle CSS link (`_content/Microsoft.FluentUI.AspNetCore.Components/Microsoft.FluentUI.AspNetCore.Components.bundle.scp.css`) and `<FluentProviders />`. Register with `AddFeatureFlagAdminUi(new Uri(".../api/feature-flags/"))`.
-MVC / Razor Pages: `AddServerSideBlazor()`, `MapBlazorHub()`, load `_framework/blazor.server.js`, and render `<component type="typeof(FeatureManagement.UI.Blazor.FeatureFlagAdmin)" render-mode="Server" />`.
+MVC / Razor Pages: `AddRazorComponents().AddInteractiveServerComponents()`, `MapRazorComponents<App>().AddInteractiveServerRenderMode()` (with an empty root `App` component), load `_framework/blazor.web.js`, and render `<component type="typeof(FeatureManagement.UI.Blazor.FeatureFlagAdmin)" render-mode="Server" />`.
 
 See `docs/feature-flags.md` for provider and filter details.
