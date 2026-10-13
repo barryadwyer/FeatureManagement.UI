@@ -1,0 +1,23 @@
+<Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/Sample.ApiService/Sample.ApiService.csproj" />
+    <Project Path="samples/Sample.AppHost/Sample.AppHost.csproj" />
+    <Project Path="samples/Sample.Blazor/Sample.Blazor.csproj" />
+    <Project Path="samples/Sample.Mvc/Sample.Mvc.csproj" />
+    <Project Path="samples/Sample.RazorPages/Sample.RazorPages.csproj" />
+    <Project Path="samples/Sample.ServiceDefaults/Sample.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/FeatureManagement.UI.Api/FeatureManagement.UI.Api.csproj" />
+    <Project Path="src/FeatureManagement.UI.Blazor/FeatureManagement.UI.Blazor.csproj" />
+    <Project Path="src/FeatureManagement.UI.Core/FeatureManagement.UI.Core.csproj" />
+    <Project Path="src/FeatureManagement.UI.Providers.AwsAppConfig/FeatureManagement.UI.Providers.AwsAppConfig.csproj" />
+    <Project Path="src/FeatureManagement.UI.Providers.AzureAppConfig/FeatureManagement.UI.Providers.AzureAppConfig.csproj" />
+    <Project Path="src/FeatureManagement.UI.Providers.DynamoDb/FeatureManagement.UI.Providers.DynamoDb.csproj" />
+    <Project Path="src/FeatureManagement.UI.Providers.Json/FeatureManagement.UI.Providers.Json.csproj" />
+    <Project Path="src/FeatureManagement.UI.Providers.Sql/FeatureManagement.UI.Providers.Sql.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FeatureManagement.UI.Tests/FeatureManagement.UI.Tests.csproj" />
+  </Folder>
+</Solution>

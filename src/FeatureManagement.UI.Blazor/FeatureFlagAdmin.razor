@@ -1,0 +1,226 @@
+@inject FeatureFlagApiClient Api
+
+<div class="ff-admin">
+    <FluentStack HorizontalAlignment="HorizontalAlignment.SpaceBetween" VerticalAlignment="VerticalAlignment.Center">
+        <FluentText Size="TextSize.Size600" Weight="TextWeight.Semibold">Feature flags</FluentText>
+        <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="8" HorizontalAlignment="HorizontalAlignment.End">
+            <FluentButton OnClick="() => StartNew(FeatureKind.ReleaseToggle)">New release toggle</FluentButton>
+            <FluentButton OnClick="() => StartNew(FeatureKind.FeatureFlag)">New feature flag</FluentButton>
+            <FluentButton OnClick="ReloadAsync">Refresh</FluentButton>
+        </FluentStack>
+    </FluentStack>
+
+    @if (_error is not null)
+    {
+        <FluentMessageBar Intent="MessageBarIntent.Error" AllowDismiss="true">@_error</FluentMessageBar>
+    }
+
+    @if (_edit is not null)
+    {
+        <FluentCard>
+            <FluentStack Orientation="Orientation.Vertical" VerticalGap="12">
+                <FluentText Size="TextSize.Size500" Weight="TextWeight.Semibold">
+                    @(_edit.IsNew ? "New" : "Edit") @(_edit.Kind == nameof(FeatureKind.ReleaseToggle) ? "release toggle" : "feature flag")
+                </FluentText>
+                <FluentTextInput Label="Name" @bind-Value="_edit.Name" Disabled="@(!_edit.IsNew)" />
+                <FluentTextArea Label="Description" @bind-Value="_edit.Description" />
+                <FluentSwitch Label="Enabled" @bind-Value="_edit.Enabled" />
+                <FluentSelect Label="Type" TOption="string" TValue="string" Items="@_kinds" @bind-Value="_edit.Kind"
+                              OptionText="@(k => k == nameof(FeatureKind.ReleaseToggle) ? "Release toggle (short-lived)" : "Feature flag (long-lived)")"
+                              OptionValue="@(k => k)" />
+                <FluentTextInput Label="Owner" @bind-Value="_edit.Owner" />
+                <FluentDatePicker Label="Expires (UTC date, empty for none)" TValue="DateTime?" @bind-Value="_edit.ExpiresDate" />
+
+                <FluentDivider />
+                <FluentText Weight="TextWeight.Semibold">Filters</FluentText>
+                <FluentSelect Label="Combine filters" TOption="string" TValue="string" Items="@_requirements"
+                              @bind-Value="_edit.RequirementType" OptionText="@(r => r == "All" ? "All must match" : "Any may match")"
+                              OptionValue="@(r => r)" />
+
+                <FluentCheckbox Label="Percentage" @bind-Value="_edit.UsePercentage" />
+                @if (_edit.UsePercentage)
+                {
+                    <FluentNumberInput Label="Enabled for % of users" TValue="double?" @bind-Value="_edit.PercentageValue" Min="0" Max="100" />
+                }
+
+                <FluentCheckbox Label="Time window" @bind-Value="_edit.UseTimeWindow" />
+                @if (_edit.UseTimeWindow)
+                {
+                    <FluentDatePicker Label="Start (UTC date)" TValue="DateTime?" @bind-Value="_edit.WindowStart" />
+                    <FluentDatePicker Label="End (UTC date)" TValue="DateTime?" @bind-Value="_edit.WindowEnd" />
+                }
+
+                <FluentCheckbox Label="Targeting (users and groups)" @bind-Value="_edit.UseTargeting" />
+                @if (_edit.UseTargeting)
+                {
+                    <FluentTextArea Label="Users (one per line)" @bind-Value="_edit.UsersText" />
+                    <FluentTextArea Label="Groups (one per line as name:percent)" @bind-Value="_edit.GroupsText" />
+                    <FluentNumberInput Label="Default rollout %" TValue="double?" @bind-Value="_edit.DefaultRollout" Min="0" Max="100" />
+                }
+
+                <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="8">
+                    <FluentButton Appearance="ButtonAppearance.Primary" OnClick="SaveAsync" Disabled="_busy">Save</FluentButton>
+                    <FluentButton OnClick="() => _edit = null">Cancel</FluentButton>
+                </FluentStack>
+            </FluentStack>
+        </FluentCard>
+    }
+
+    <FluentTabs @bind-ActiveTabId="_tab">
+        <FluentTab Id="toggles" Label="@($"Release toggles ({Count(FeatureKind.ReleaseToggle)})")" />
+        <FluentTab Id="flags" Label="@($"Feature flags ({Count(FeatureKind.FeatureFlag)})")" />
+        <FluentTab Id="audit" Label="Audit log" />
+    </FluentTabs>
+
+    @if (_loading)
+    {
+        <FluentSpinner />
+    }
+    else if (_tab == "audit")
+    {
+        <FluentDataGrid Items="@_audit.AsQueryable()" TGridItem="AuditEntry">
+            <TemplateColumn Title="When (UTC)">@context.TimestampUtc.ToString("u")</TemplateColumn>
+            <TemplateColumn Title="User">@context.User</TemplateColumn>
+            <TemplateColumn Title="Action">@context.Action</TemplateColumn>
+            <TemplateColumn Title="Flag">@context.FlagName</TemplateColumn>
+        </FluentDataGrid>
+    }
+    else
+    {
+        var kind = _tab == "flags" ? FeatureKind.FeatureFlag : FeatureKind.ReleaseToggle;
+        <FluentDataGrid Items="@_flags.Where(f => f.Kind == kind).AsQueryable()" TGridItem="FeatureFlag">
+            <TemplateColumn Title="Name">
+                <strong>@context.Name</strong>
+                @if (!string.IsNullOrWhiteSpace(context.Description))
+                {
+                    <div>@context.Description</div>
+                }
+            </TemplateColumn>
+            <TemplateColumn Title="Enabled">
+                <FluentSwitch Value="context.Enabled" ValueChanged="@((bool v) => ToggleAsync(context, v))" />
+            </TemplateColumn>
+            <TemplateColumn Title="Filters">@Describe(context)</TemplateColumn>
+            <TemplateColumn Title="Owner">@context.Owner</TemplateColumn>
+            <TemplateColumn Title="Expires">
+                @if (context.ExpiresUtc is { } e)
+                {
+                    <FluentBadge Color="@BadgeColorFor(context.Expiry)">@e.ToString("yyyy-MM-dd") @(context.Expiry == ExpiryStatus.Expired ? "(expired)" : context.Expiry == ExpiryStatus.ExpiringSoon ? "(soon)" : "")</FluentBadge>
+                }
+                else
+                {
+                    <span>Never</span>
+                }
+            </TemplateColumn>
+            <TemplateColumn Title="">
+                <FluentButton OnClick="() => _edit = FlagEditModel.From(context)">Edit</FluentButton>
+                <FluentButton OnClick="() => DeleteAsync(context)">Delete</FluentButton>
+            </TemplateColumn>
+        </FluentDataGrid>
+    }
+</div>
+
+@code {
+    private static readonly string[] _kinds = [nameof(FeatureKind.ReleaseToggle), nameof(FeatureKind.FeatureFlag)];
+    private static readonly string[] _requirements = ["Any", "All"];
+
+    private IReadOnlyList<FeatureFlag> _flags = [];
+    private IReadOnlyList<AuditEntry> _audit = [];
+    private FeatureFlagAdminMetadata? _meta;
+    private FlagEditModel? _edit;
+    private string _tab = "toggles";
+    private string? _error;
+    private bool _loading = true;
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _meta = await Guard(() => Api.GetMetadataAsync());
+        await ReloadAsync();
+    }
+
+    private int Count(FeatureKind kind) => _flags.Count(f => f.Kind == kind);
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _error = null;
+        _flags = await Guard(() => Api.ListAsync()) ?? _flags;
+        _audit = await Guard(() => Api.GetAuditAsync()) ?? _audit;
+        _loading = false;
+    }
+
+    private void StartNew(FeatureKind kind) => _edit = FlagEditModel.ForNew(kind, _meta);
+
+    private async Task SaveAsync()
+    {
+        if (_edit is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        var flag = _edit.ToFlag();
+        var ok = await Guard(async () =>
+        {
+            await (_edit.IsNew ? Api.CreateAsync(flag) : Api.UpdateAsync(flag));
+            return true;
+        });
+        _busy = false;
+        if (ok)
+        {
+            _edit = null;
+            await ReloadAsync();
+        }
+    }
+
+    private async Task ToggleAsync(FeatureFlag flag, bool enabled)
+    {
+        if (await Guard(async () => { await Api.UpdateAsync(flag with { Enabled = enabled }); return true; }))
+        {
+            await ReloadAsync();
+        }
+    }
+
+    private async Task DeleteAsync(FeatureFlag flag)
+    {
+        if (await Guard(async () => { await Api.DeleteAsync(flag); return true; }))
+        {
+            await ReloadAsync();
+        }
+    }
+
+    private async Task<T?> Guard<T>(Func<Task<T>> action)
+    {
+        try
+        {
+            return await action();
+        }
+        catch (FeatureFlagApiException ex)
+        {
+            _error = ex.IsConflict ? ex.Message + " Refresh and try again." : ex.Message;
+        }
+        catch (HttpRequestException ex)
+        {
+            _error = ex.Message;
+        }
+
+        return default;
+    }
+
+    private static string Describe(FeatureFlag f)
+    {
+        var parts = new List<string>();
+        if (f.Percentage is { } p) parts.Add($"{p.Value:0.##}% of users");
+        if (f.TimeWindow is { } t) parts.Add($"{t.Start:yyyy-MM-dd} to {t.End:yyyy-MM-dd}");
+        if (f.Targeting is { } g) parts.Add($"{g.Users.Count} users, {g.Groups.Count} groups, {g.DefaultRolloutPercentage:0.##}% default");
+        if (f.OtherFilters.Count > 0) parts.Add($"{f.OtherFilters.Count} custom");
+        return parts.Count == 0 ? "None" : string.Join("; ", parts);
+    }
+
+    private static BadgeColor BadgeColorFor(ExpiryStatus s) => s switch
+    {
+        ExpiryStatus.Expired => BadgeColor.Danger,
+        ExpiryStatus.ExpiringSoon => BadgeColor.Warning,
+        _ => BadgeColor.Success,
+    };
+}
