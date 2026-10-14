@@ -176,6 +176,126 @@ In the MVC view or Razor Page:
 
 See `samples/Sample.Mvc` and `samples/Sample.RazorPages` for complete working apps.
 
+## Consuming flag values
+
+The admin UI only edits flags. Your apps read them through `Microsoft.FeatureManagement`, which evaluates release toggles and feature flags the same way. Each consuming app must load the same flag store the admin API writes to (for the JSON provider, the same `FeatureManagement` section of configuration; for Azure App Configuration, `builder.Configuration.AddAzureAppConfiguration(o => o.UseFeatureFlags())`).
+
+```bash
+dotnet add package Microsoft.FeatureManagement.AspNetCore
+```
+
+```csharp
+builder.Services.AddFeatureManagement()
+    .AddFeatureFilter<ContextualTargetingFilter>();   // needed for user/group targeting
+```
+
+### MVC controller
+
+```csharp
+public class CheckoutController(IFeatureManager features) : Controller
+{
+    // Returns 404 when the toggle is off
+    [FeatureGate("NewCheckoutFlow")]
+    public IActionResult Index() => View();
+
+    public async Task<IActionResult> Banner()
+    {
+        var context = new TargetingContext { UserId = User.Identity?.Name, Groups = ["beta-testers"] };
+        ViewBag.ShowBanner = await features.IsEnabledAsync("BlackFridayBanner", context);
+        return View();
+    }
+}
+```
+
+In a view (add `@addTagHelper *, Microsoft.FeatureManagement.AspNetCore` to `_ViewImports.cshtml`):
+
+```cshtml
+<feature name="DarkModeBeta"><link rel="stylesheet" href="~/css/dark.css" /></feature>
+```
+
+### Razor Pages
+
+```csharp
+public class IndexModel(IFeatureManager features) : PageModel
+{
+    public bool UseNewSignup { get; private set; }
+
+    public async Task OnGetAsync() =>
+        UseNewSignup = await features.IsEnabledAsync("NewSignupPage");
+}
+```
+
+Gate a whole page with `[FeatureGate("OrdersApiV2")]` on the `PageModel`, or use the `<feature>` tag helper in the `.cshtml`.
+
+### Blazor
+
+Register `AddFeatureManagement()` and inject the manager. Use `IFeatureManagerSnapshot` for a stable value per request in static rendering, or `IFeatureManager` in interactive components:
+
+```razor
+@inject IFeatureManager Features
+
+@if (_search2)
+{
+    <SearchV2 />
+}
+else
+{
+    <SearchV1 />
+}
+
+@code {
+    private bool _search2;
+
+    protected override async Task OnInitializedAsync() =>
+        _search2 = await Features.IsEnabledAsync("SearchV2Rollout", new TargetingContext { UserId = "alice" });
+}
+```
+
+## Consuming flag values from React
+
+Browsers should not read the flag store directly, and percentage and targeting rules are evaluated on the server. Instead, add an endpoint to your own API that evaluates flags for the current user, and have React fetch it. For example:
+
+```csharp
+app.MapGet("/api/flags/evaluate", async (IFeatureManager features, ClaimsPrincipal user) =>
+{
+    var context = new TargetingContext { UserId = user.Identity?.Name };
+    var result = new Dictionary<string, bool>();
+    await foreach (var name in features.GetFeatureNamesAsync())
+        result[name] = await features.IsEnabledAsync(name, context);
+    return result;
+});
+```
+
+The sample API has a similar endpoint in `samples/Sample.ApiService/Program.cs`: `GET /api/demo/evaluate?user=alice&groups=beta-testers`. On the React side, load the evaluated values once and share them through context:
+
+```tsx
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+
+const FlagsContext = createContext<Record<string, boolean>>({});
+
+export function FlagsProvider({ children, url = "/api/flags/evaluate" }: { children: ReactNode; url?: string }) {
+  const [flags, setFlags] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    fetch(url, { credentials: "include" }).then(r => r.json()).then(setFlags).catch(() => setFlags({}));
+  }, [url]);
+  return <FlagsContext.Provider value={flags}>{children}</FlagsContext.Provider>;
+}
+
+export const useFeature = (name: string) => useContext(FlagsContext)[name] ?? false;
+
+export function Feature({ name, children }: { name: string; children: ReactNode }) {
+  return useFeature(name) ? <>{children}</> : null;
+}
+```
+
+```tsx
+<FlagsProvider>
+  <Feature name="NewCheckoutFlow"><NewCheckout /></Feature>
+</FlagsProvider>
+```
+
+Unknown or failed flags default to off. Re-fetch on focus or on an interval if you want changes to appear without a reload. Always enforce the same flag on the server for anything security-sensitive; hiding UI is not access control.
+
 ## Tests
 
 ```powershell
