@@ -80,6 +80,19 @@ public sealed class FeatureFlagTests : IDisposable
     }
 
     [Fact]
+    public async Task Release_toggles_drop_filters_but_feature_flags_keep_them()
+    {
+        var svc = Service();
+        var toggle = await svc.CreateAsync(Sample("t"), "u");
+        var flag = await svc.CreateAsync(Sample("f", FeatureKind.FeatureFlag), "u");
+
+        Assert.Null(toggle.Percentage);
+        Assert.Null(toggle.Targeting);
+        Assert.NotNull(flag.Percentage);
+        Assert.NotNull(flag.Targeting);
+    }
+
+    [Fact]
     public async Task Expiry_status_and_health_check_report_expired_flags()
     {
         var svc = Service();
@@ -100,7 +113,7 @@ public sealed class FeatureFlagTests : IDisposable
     {
         var svc = Service();
         var ex = await Assert.ThrowsAsync<FeatureFlagValidationException>(() =>
-            svc.CreateAsync(Sample("bad name!") with { Percentage = new PercentageFilter(150) }, "u"));
+            svc.CreateAsync(Sample("bad name!") with { Kind = FeatureKind.FeatureFlag, Percentage = new PercentageFilter(150) }, "u"));
         Assert.Equal(2, ex.Errors.Count);
     }
 

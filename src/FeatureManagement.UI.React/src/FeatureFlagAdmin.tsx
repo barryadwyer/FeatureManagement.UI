@@ -264,7 +264,7 @@ export function FeatureFlagAdmin(props: FeatureFlagAdminProps) {
             <TableRow>
               <TableHeaderCell>Name</TableHeaderCell>
               <TableHeaderCell>Enabled</TableHeaderCell>
-              <TableHeaderCell>Filters</TableHeaderCell>
+              {tab === "FeatureFlag" && <TableHeaderCell>Filters</TableHeaderCell>}
               <TableHeaderCell>Owner</TableHeaderCell>
               <TableHeaderCell>Expires</TableHeaderCell>
               <TableHeaderCell />
@@ -280,7 +280,7 @@ export function FeatureFlagAdmin(props: FeatureFlagAdminProps) {
                 <TableCell>
                   <Switch checked={f.enabled} onChange={(_, d) => void toggle(f, d.checked)} aria-label={`Enable ${f.name}`} />
                 </TableCell>
-                <TableCell>{describe(f)}</TableCell>
+                {tab === "FeatureFlag" && <TableCell>{describe(f)}</TableCell>}
                 <TableCell>{f.owner}</TableCell>
                 <TableCell>
                   {f.expiresUtc ? (
@@ -324,6 +324,8 @@ export function FeatureFlagAdmin(props: FeatureFlagAdminProps) {
                   <Input type="date" value={form.expires} onChange={(_, d) => patch({ expires: d.value })} />
                 </Field>
 
+                {form.kind === "FeatureFlag" && (
+                  <>
                 <Text weight="semibold">Filters</Text>
                 <Field label="Combine filters">
                   <Select value={form.requirementType} onChange={(_, d) => patch({ requirementType: d.value as "Any" | "All" })}>
@@ -355,6 +357,8 @@ export function FeatureFlagAdmin(props: FeatureFlagAdminProps) {
                     <Field label="Default rollout %">
                       <Input type="number" min={0} max={100} value={form.defaultRollout} onChange={(_, d) => patch({ defaultRollout: d.value })} />
                     </Field>
+                  </>
+                )}
                   </>
                 )}
               </DialogContent>

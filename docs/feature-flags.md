@@ -61,7 +61,6 @@ builder.Services.AddFeatureFlagAdminUi(new Uri("https://host/api/feature-flags/"
 ```
 
 ```razor
-<FluentProvider>
-    <FeatureFlagAdmin />
-</FluentProvider>
+<FluentProviders />
+<FeatureFlagAdmin />
 ```

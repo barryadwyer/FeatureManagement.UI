@@ -94,6 +94,12 @@ public sealed partial class FeatureFlagAdminService(
 
     private FeatureFlag ApplyDefaults(FeatureFlag flag, DateTimeOffset now)
     {
+        // Release toggles are plain on/off switches; the built-in filters only apply to feature flags.
+        if (flag.Kind == FeatureKind.ReleaseToggle)
+        {
+            flag = flag with { Percentage = null, TimeWindow = null, Targeting = null };
+        }
+
         if (flag.ExpiresUtc is not null)
         {
             return flag;

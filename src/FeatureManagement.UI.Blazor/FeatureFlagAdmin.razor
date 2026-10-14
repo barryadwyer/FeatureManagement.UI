@@ -31,6 +31,10 @@
                 <FluentTextInput Label="Owner" @bind-Value="_edit.Owner" />
                 <FluentDatePicker Label="Expires (UTC date, empty for none)" TValue="DateTime?" @bind-Value="_edit.ExpiresDate" />
 
+                @if (_edit.Kind == nameof(FeatureKind.FeatureFlag))
+
+                {
+
                 <FluentDivider />
                 <FluentText Weight="TextWeight.Semibold">Filters</FluentText>
                 <FluentSelect Label="Combine filters" TOption="string" TValue="string" Items="@_requirements"
@@ -57,6 +61,9 @@
                     <FluentTextArea Label="Groups (one per line as name:percent)" @bind-Value="_edit.GroupsText" />
                     <FluentNumberInput Label="Default rollout %" TValue="double?" @bind-Value="_edit.DefaultRollout" Min="0" Max="100" />
                 }
+
+                }
+
 
                 <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="8">
                     <FluentButton Appearance="ButtonAppearance.Primary" OnClick="SaveAsync" Disabled="_busy">Save</FluentButton>
@@ -88,7 +95,7 @@
     else
     {
         var kind = _tab == "flags" ? FeatureKind.FeatureFlag : FeatureKind.ReleaseToggle;
-        <FluentDataGrid Items="@_flags.Where(f => f.Kind == kind).AsQueryable()" TGridItem="FeatureFlag" MultiLine="true" GridTemplateColumns="2.6fr 90px 2fr 1.2fr 1.4fr 230px">
+        <FluentDataGrid Items="@_flags.Where(f => f.Kind == kind).AsQueryable()" TGridItem="FeatureFlag" MultiLine="true" GridTemplateColumns="@(kind == FeatureKind.FeatureFlag ? "2.6fr 90px 2fr 1.2fr 1.4fr 230px" : "3fr 90px 1.2fr 1.4fr 230px")">
             <TemplateColumn Title="Name">
                 <strong>@context.Name</strong>
                 @if (!string.IsNullOrWhiteSpace(context.Description))
@@ -99,7 +106,10 @@
             <TemplateColumn Title="Enabled">
                 <FluentSwitch Value="context.Enabled" ValueChanged="@((bool v) => ToggleAsync(context, v))" />
             </TemplateColumn>
-            <TemplateColumn Title="Filters">@Describe(context)</TemplateColumn>
+            @if (kind == FeatureKind.FeatureFlag)
+            {
+                <TemplateColumn Title="Filters">@Describe(context)</TemplateColumn>
+            }
             <TemplateColumn Title="Owner">@context.Owner</TemplateColumn>
             <TemplateColumn Title="Expires">
                 @if (context.ExpiresUtc is { } e)
