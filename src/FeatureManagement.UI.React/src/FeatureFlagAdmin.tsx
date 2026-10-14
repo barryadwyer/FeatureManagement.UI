@@ -26,6 +26,7 @@ import {
   TableRow,
   Text,
   Textarea,
+  tokens,
 } from "@fluentui/react-components";
 import {
   createFeatureFlagClient,
@@ -219,11 +220,20 @@ export function FeatureFlagAdmin(props: FeatureFlagAdminProps) {
         <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>
       )}
 
-      <TabList selectedValue={tab} onTabSelect={(_, d) => setTab(d.value as typeof tab)}>
-        <Tab value="ReleaseToggle">Release toggles ({count("ReleaseToggle")})</Tab>
-        <Tab value="FeatureFlag">Feature flags ({count("FeatureFlag")})</Tab>
-        <Tab value="audit">Audit log</Tab>
-      </TabList>
+      <div
+        style={{
+          border: `1px solid ${tokens.colorNeutralStroke1}`,
+          borderRadius: tokens.borderRadiusMedium,
+          background: tokens.colorNeutralBackground2,
+          padding: "4px 12px",
+        }}
+      >
+        <TabList selectedValue={tab} onTabSelect={(_, d) => setTab(d.value as typeof tab)}>
+          <Tab value="ReleaseToggle">Release toggles ({count("ReleaseToggle")})</Tab>
+          <Tab value="FeatureFlag">Feature flags ({count("FeatureFlag")})</Tab>
+          <Tab value="audit">Audit log</Tab>
+        </TabList>
+      </div>
 
       {loading ? (
         <Spinner />

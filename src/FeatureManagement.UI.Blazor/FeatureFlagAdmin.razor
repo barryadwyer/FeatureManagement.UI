@@ -2,7 +2,7 @@
 
 <div class="ff-admin">
     <FluentStack HorizontalAlignment="HorizontalAlignment.SpaceBetween" VerticalAlignment="VerticalAlignment.Center">
-        <FluentText Size="TextSize.Size600" Weight="TextWeight.Semibold">Feature flags</FluentText>
+        <FluentText Size="TextSize.Size600" Weight="TextWeight.Semibold" Style="white-space: nowrap;">Feature flags</FluentText>
         <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="8" HorizontalAlignment="HorizontalAlignment.End">
             <FluentButton OnClick="() => StartNew(FeatureKind.ReleaseToggle)">New release toggle</FluentButton>
             <FluentButton OnClick="() => StartNew(FeatureKind.FeatureFlag)">New feature flag</FluentButton>
@@ -66,11 +66,11 @@
         </FluentCard>
     }
 
-    <FluentTabs @bind-ActiveTabId="_tab">
-        <FluentTab Id="toggles" Label="@($"Release toggles ({Count(FeatureKind.ReleaseToggle)})")" />
-        <FluentTab Id="flags" Label="@($"Feature flags ({Count(FeatureKind.FeatureFlag)})")" />
-        <FluentTab Id="audit" Label="Audit log" />
-    </FluentTabs>
+    <div style="border: 1px solid var(--colorNeutralStroke1, #d1d1d1); border-radius: 6px; padding: 4px 12px; margin: 12px 0; background: var(--colorNeutralBackground2, #fafafa);"><FluentTabs @bind-ActiveTabId="_tab">
+        <FluentTab Id="toggles" Header="@($"Release toggles ({Count(FeatureKind.ReleaseToggle)})")" />
+        <FluentTab Id="flags" Header="@($"Feature flags ({Count(FeatureKind.FeatureFlag)})")" />
+        <FluentTab Id="audit" Header="Audit log" />
+    </FluentTabs></div>
 
     @if (_loading)
     {
@@ -78,7 +78,7 @@
     }
     else if (_tab == "audit")
     {
-        <FluentDataGrid Items="@_audit.AsQueryable()" TGridItem="AuditEntry">
+        <FluentDataGrid Items="@_audit.AsQueryable()" TGridItem="AuditEntry" MultiLine="true" GridTemplateColumns="1.5fr 1fr 1fr 2fr">
             <TemplateColumn Title="When (UTC)">@context.TimestampUtc.ToString("u")</TemplateColumn>
             <TemplateColumn Title="User">@context.User</TemplateColumn>
             <TemplateColumn Title="Action">@context.Action</TemplateColumn>
@@ -88,7 +88,7 @@
     else
     {
         var kind = _tab == "flags" ? FeatureKind.FeatureFlag : FeatureKind.ReleaseToggle;
-        <FluentDataGrid Items="@_flags.Where(f => f.Kind == kind).AsQueryable()" TGridItem="FeatureFlag">
+        <FluentDataGrid Items="@_flags.Where(f => f.Kind == kind).AsQueryable()" TGridItem="FeatureFlag" MultiLine="true" GridTemplateColumns="2.6fr 90px 2fr 1.2fr 1.4fr 230px">
             <TemplateColumn Title="Name">
                 <strong>@context.Name</strong>
                 @if (!string.IsNullOrWhiteSpace(context.Description))
@@ -112,8 +112,8 @@
                 }
             </TemplateColumn>
             <TemplateColumn Title="">
-                <FluentButton OnClick="() => _edit = FlagEditModel.From(context)">Edit</FluentButton>
-                <FluentButton OnClick="() => DeleteAsync(context)">Delete</FluentButton>
+                <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="6" Wrap="false"><FluentButton OnClick="() => _edit = FlagEditModel.From(context)">Edit</FluentButton>
+                <FluentButton OnClick="() => DeleteAsync(context)">Delete</FluentButton></FluentStack>
             </TemplateColumn>
         </FluentDataGrid>
     }
