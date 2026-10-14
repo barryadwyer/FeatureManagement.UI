@@ -1,0 +1,17 @@
+<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <Authors>barryadwyer</Authors>
+    <Description>FeatureManagement.UI libraries for Fluent UI feature flag administration with provider-backed storage.</Description>
+    <PackageProjectUrl>https://github.com/barryadwyer/FeatureManagement.UI</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/barryadwyer/FeatureManagement.UI</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>feature-flags;feature-management;fluent-ui;blazor</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>

@@ -37,6 +37,48 @@ Editing in React:
 
 ![React edit dialog](docs/images/react-edit.png)
 
+## NuGet beta packages
+
+The eight .NET libraries use version `0.1.0-beta.1`. Samples and the React
+package are not included in NuGet publishing.
+
+After publication, install from nuget.org:
+
+```powershell
+dotnet add package FeatureManagement.UI.Blazor --version 0.1.0-beta.1
+dotnet add package FeatureManagement.UI.Api --version 0.1.0-beta.1
+dotnet add package FeatureManagement.UI.Providers.Json --version 0.1.0-beta.1
+```
+
+GitHub Packages provides the same packages at
+`https://nuget.pkg.github.com/barryadwyer/index.json`. Installing from that feed
+requires GitHub authentication with package-read access, even for public packages.
+Never commit credentials to a NuGet configuration file.
+
+### Maintainer publishing setup
+
+The workflow is `.github/workflows/publish.yml`. It tests and packs only the eight
+library projects, then publishes identical artifacts to both feeds.
+
+For nuget.org, create a policy at
+[Trusted Publishing](https://www.nuget.org/account/trustedpublishing) with:
+
+| Field | Value |
+|---|---|
+| Repository owner | `barryadwyer` |
+| Repository | `FeatureManagement.UI` |
+| Workflow file | `publish.yml` (filename, not the workflow display name) |
+| Environment | `release` |
+
+Create the GitHub environment `release` and add its secret `NUGET_USER` containing
+your nuget.org username (not your email). The workflow uses `NuGet/login@v1`
+with `id-token: write` to obtain a short-lived publishing key.
+
+Before the first publish, run `dotnet pack -c Release -o ./artifacts` for each
+library project and inspect the resulting packages. Once the policy is configured,
+push a tag matching the shared version (`v0.1.0-beta.1`), or manually dispatch
+the workflow with destination `both`. Destination `github` skips nuget.org.
+
 ## Repository layout
 
 | Path | Purpose |
