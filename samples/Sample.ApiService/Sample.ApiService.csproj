@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.FeatureManagement.AspNetCore" Version="4.*" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.19.1" />
     <ProjectReference Include="..\..\src\FeatureManagement.UI.Api\FeatureManagement.UI.Api.csproj" />
     <ProjectReference Include="..\..\src\FeatureManagement.UI.Providers.Json\FeatureManagement.UI.Providers.Json.csproj" />
     <ProjectReference Include="..\Sample.ServiceDefaults\Sample.ServiceDefaults.csproj" />
